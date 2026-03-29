@@ -42,9 +42,38 @@ export function applyFilter(
         Math.max(0, (data[i + 2] - 128) * contrast + 128 + brightness),
       );
     }
+  } else if (filter === "magic") {
+    applyMagicFilter(data, canvas.width, canvas.height);
   }
 
   ctx.putImageData(imageData, 0, 0);
+}
+
+function applyMagicFilter(
+  data: Uint8ClampedArray,
+  width: number,
+  height: number,
+): void {
+  // Step 1: Grayscale
+  const gray = new Float32Array(width * height);
+  for (let i = 0; i < width * height; i++) {
+    gray[i] =
+      0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2];
+  }
+
+  // Step 2: High contrast (factor 2.5) + brightness -20
+  const contrast = new Float32Array(width * height);
+  for (let i = 0; i < gray.length; i++) {
+    contrast[i] = Math.min(255, Math.max(0, (gray[i] - 128) * 2.5 + 128 - 20));
+  }
+
+  // Write back
+  for (let i = 0; i < width * height; i++) {
+    const v = contrast[i];
+    data[i * 4] = v;
+    data[i * 4 + 1] = v;
+    data[i * 4 + 2] = v;
+  }
 }
 
 export function drawImageToCanvas(
@@ -146,6 +175,8 @@ export function imageToBase64(
       d[i + 1] = Math.min(255, Math.max(0, (d[i + 1] - 128) * 1.3 + 128 + 15));
       d[i + 2] = Math.min(255, Math.max(0, (d[i + 2] - 128) * 1.3 + 128 + 15));
     }
+  } else if (filter === "magic") {
+    applyMagicFilter(d, thumbWidth, thumbHeight);
   }
 
   ctx.putImageData(imageData, 0, 0);

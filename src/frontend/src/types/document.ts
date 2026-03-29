@@ -1,4 +1,4 @@
-export type FilterType = "original" | "grayscale" | "bw" | "enhance";
+export type FilterType = "original" | "grayscale" | "bw" | "enhance" | "magic";
 export type FormatType = "PDF" | "PNG" | "JPEG";
 export type QualityType = "High" | "Medium" | "Low";
 

@@ -27,18 +27,23 @@ export function CameraModal({ open, onClose, onCapture }: CameraModalProps) {
     capturePhoto,
   } = useCamera({ facingMode: "environment", quality: 0.9 });
 
-  const startedRef = useRef(false);
+  // Keep stable refs so the effect never depends on the callback identities
+  const startCameraRef = useRef(startCamera);
+  const stopCameraRef = useRef(stopCamera);
+  useEffect(() => {
+    startCameraRef.current = startCamera;
+  }, [startCamera]);
+  useEffect(() => {
+    stopCameraRef.current = stopCamera;
+  }, [stopCamera]);
 
   useEffect(() => {
-    if (open && !startedRef.current) {
-      startedRef.current = true;
-      startCamera();
+    if (open) {
+      startCameraRef.current();
+    } else {
+      stopCameraRef.current();
     }
-    if (!open) {
-      startedRef.current = false;
-      stopCamera();
-    }
-  }, [open, startCamera, stopCamera]);
+  }, [open]);
 
   async function handleCapture() {
     const file = await capturePhoto();
@@ -104,7 +109,7 @@ export function CameraModal({ open, onClose, onCapture }: CameraModalProps) {
             {error && (
               <Button
                 variant="outline"
-                onClick={() => startCamera()}
+                onClick={() => startCameraRef.current()}
                 data-ocid="camera.retry.button"
               >
                 <RotateCcw size={15} className="mr-2" />

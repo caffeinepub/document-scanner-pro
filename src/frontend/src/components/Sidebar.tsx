@@ -4,10 +4,12 @@ import { cn } from "@/lib/utils";
 import {
   Camera,
   ChevronLeft,
+  FileCog,
   FileText,
   Folder,
   HelpCircle,
   LayoutDashboard,
+  MessageCircle,
   ScanLine,
   Settings,
   Share2,
@@ -46,8 +48,10 @@ export function Sidebar({
     { icon: <ScanLine size={18} />, label: "My Scans", id: "scans" },
     { icon: <Share2 size={18} />, label: "Shared", id: "shared" },
     { icon: <Folder size={18} />, label: "Folders", id: "folders" },
+    { icon: <FileCog size={18} />, label: "PDF Tools", id: "pdftools" },
     { icon: <Settings size={18} />, label: "Settings", id: "settings" },
     { icon: <HelpCircle size={18} />, label: "Help", id: "help" },
+    { icon: <MessageCircle size={18} />, label: "Chatbot", id: "chatbot" },
   ];
 
   return (
@@ -88,44 +92,49 @@ export function Sidebar({
 
       {/* Nav */}
       <nav className="flex-1 py-4 px-2 space-y-1" data-ocid="sidebar.panel">
-        {navItems.map((item) => (
-          <button
-            type="button"
-            key={item.id}
-            onClick={() => onNavChange(item.id)}
-            data-ocid={`sidebar.${item.id}.link`}
-            className={cn(
-              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150",
-              activeNav === item.id
-                ? "bg-primary/20 text-primary-foreground"
-                : "text-sidebar-foreground/70 hover:bg-white/5 hover:text-sidebar-foreground",
-            )}
-            style={
-              activeNav === item.id
-                ? { backgroundColor: "rgba(30,136,229,0.25)" }
-                : {}
-            }
-          >
-            <span className={cn(activeNav === item.id ? "text-blue-400" : "")}>
-              {item.icon}
-            </span>
-            {!collapsed && (
-              <span className="flex-1 text-left font-medium">{item.label}</span>
-            )}
-            {!collapsed && activeNav === item.id && (
-              <Badge
-                className="text-xs py-0 px-1.5 h-4 font-medium"
-                style={{
-                  backgroundColor: "#1E88E5",
-                  color: "white",
-                  border: "none",
-                }}
-              >
-                Active
-              </Badge>
-            )}
-          </button>
-        ))}
+        {navItems.map((item) => {
+          const isActive = activeNav === item.id;
+          return (
+            <button
+              type="button"
+              key={item.id}
+              onClick={() => onNavChange(item.id)}
+              onMouseEnter={() => onNavChange(item.id)}
+              data-ocid={`sidebar.${item.id}.link`}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 cursor-pointer",
+                isActive
+                  ? "text-white"
+                  : "text-sidebar-foreground/70 hover:text-white",
+              )}
+              style={{
+                backgroundColor: isActive ? "rgba(30,136,229,0.30)" : undefined,
+                boxShadow: isActive ? "inset 3px 0 0 #1E88E5" : "none",
+              }}
+            >
+              <span style={{ color: isActive ? "#60A5FA" : undefined }}>
+                {item.icon}
+              </span>
+              {!collapsed && (
+                <span className="flex-1 text-left font-medium">
+                  {item.label}
+                </span>
+              )}
+              {!collapsed && isActive && (
+                <Badge
+                  className="text-xs py-0 px-1.5 h-4 font-medium"
+                  style={{
+                    backgroundColor: "#1E88E5",
+                    color: "white",
+                    border: "none",
+                  }}
+                >
+                  Active
+                </Badge>
+              )}
+            </button>
+          );
+        })}
       </nav>
 
       {/* Bottom actions */}
@@ -134,7 +143,7 @@ export function Sidebar({
           <Button
             type="button"
             onClick={onNewScan}
-            className="w-full text-sm font-medium"
+            className="w-full text-sm font-medium hover:brightness-110 active:scale-[0.98]"
             style={{ backgroundColor: "#1E88E5", color: "white" }}
             data-ocid="sidebar.new_scan.button"
           >
@@ -145,7 +154,7 @@ export function Sidebar({
             type="button"
             onClick={onImport}
             variant="secondary"
-            className="w-full text-sm font-medium"
+            className="w-full text-sm font-medium hover:brightness-110 active:scale-[0.98]"
             style={{
               backgroundColor: "#374151",
               color: "#F9FAFB",
@@ -163,7 +172,7 @@ export function Sidebar({
           <button
             type="button"
             onClick={onNewScan}
-            className="w-full flex items-center justify-center p-2.5 rounded-lg text-blue-400 hover:bg-white/5 transition-colors"
+            className="w-full flex items-center justify-center p-2.5 rounded-lg text-blue-400 hover:bg-blue-500/20 hover:text-blue-300 transition-all duration-200"
             data-ocid="sidebar.new_scan_collapsed.button"
           >
             <Camera size={18} />
@@ -171,7 +180,7 @@ export function Sidebar({
           <button
             type="button"
             onClick={onImport}
-            className="w-full flex items-center justify-center p-2.5 rounded-lg text-sidebar-foreground/60 hover:bg-white/5 transition-colors"
+            className="w-full flex items-center justify-center p-2.5 rounded-lg text-sidebar-foreground/60 hover:bg-white/10 hover:text-white transition-all duration-200"
             data-ocid="sidebar.import_collapsed.button"
           >
             <Upload size={18} />
