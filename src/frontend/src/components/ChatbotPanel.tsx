@@ -1206,16 +1206,7 @@ export default function ChatbotPanel({ documents }: ChatbotPanelProps) {
 
       <footer className="px-8 py-3 border-t border-border text-center">
         <p className="text-xs text-muted-foreground">
-          © {new Date().getFullYear()}. Built with{" "}
-          <span className="text-red-400">♥</span> using{" "}
-          <a
-            href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-primary transition-colors"
-          >
-            caffeine.ai
-          </a>
+          © {new Date().getFullYear()}. Built by vaibhav ramasane
         </p>
       </footer>
     </main>

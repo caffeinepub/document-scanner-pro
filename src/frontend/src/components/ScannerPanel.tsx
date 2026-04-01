@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useIsMobile } from "../hooks/use-mobile";
 import { getFullResBase64, imageToBase64 } from "../lib/imageFilters";
 import { exportAsPDF } from "../lib/pdfExport";
 import { detectDocumentCorners, perspectiveWarp } from "../lib/perspectiveWarp";
@@ -62,12 +63,17 @@ const FILTERS: { id: FilterType; label: string; dot: string }[] = [
 interface ScannerPanelProps {
   onDocumentSaved: (doc: ScannedDocument) => void;
   onImageChange?: (src: string | null) => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 export function ScannerPanel({
   onDocumentSaved,
   onImageChange,
+  mobileOpen = false,
+  onMobileClose,
 }: ScannerPanelProps) {
+  const isMobile = useIsMobile();
   const [cameraOpen, setCameraOpen] = useState(false);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>("original");
@@ -253,334 +259,357 @@ export function ScannerPanel({
   const polygonPoints = displayCorners.map((c) => `${c[0]},${c[1]}`).join(" ");
 
   return (
-    <aside
-      className="fixed right-0 top-0 h-full w-80 bg-card border-l border-border flex flex-col z-20"
-      data-ocid="scanner.panel"
-    >
-      {/* Header */}
-      <div className="px-5 py-4 border-b border-border flex items-center gap-2">
-        <ScanLine size={16} className="text-blue-500 shrink-0" />
-        <div>
-          <h2 className="font-semibold text-sm text-foreground leading-tight">
-            Active Scanner
-          </h2>
-          <p className="text-xs text-muted-foreground">Capture &amp; Edit</p>
+    <>
+      {/* Mobile backdrop */}
+      {isMobile && mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-40"
+          onClick={onMobileClose}
+          onKeyDown={(e) => e.key === "Escape" && onMobileClose?.()}
+          role="button"
+          tabIndex={-1}
+          aria-label="Close scanner"
+        />
+      )}
+      <aside
+        className={cn(
+          "fixed right-0 top-0 h-full w-80 bg-card border-l border-border flex flex-col",
+          isMobile
+            ? cn(
+                "z-50 transition-transform duration-300",
+                mobileOpen ? "translate-x-0" : "translate-x-full",
+              )
+            : "z-20 hidden md:flex",
+        )}
+        data-ocid="scanner.panel"
+      >
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-border flex items-center gap-2">
+          <ScanLine size={16} className="text-blue-500 shrink-0" />
+          <div>
+            <h2 className="font-semibold text-sm text-foreground leading-tight">
+              Active Scanner
+            </h2>
+            <p className="text-xs text-muted-foreground">Capture &amp; Edit</p>
+          </div>
         </div>
-      </div>
 
-      <div className="flex-1 overflow-y-auto">
-        {/* Preview / Crop Mode */}
-        <div className="p-4">
-          <div
-            ref={cropContainerRef}
-            className="relative rounded-lg overflow-hidden bg-muted border border-border flex items-center justify-center"
-            style={{ height: "260px" }}
-          >
-            {cropMode && imageSrc ? (
-              <>
+        <div className="flex-1 overflow-y-auto">
+          {/* Preview / Crop Mode */}
+          <div className="p-4">
+            <div
+              ref={cropContainerRef}
+              className="relative rounded-lg overflow-hidden bg-muted border border-border flex items-center justify-center"
+              style={{ height: "260px" }}
+            >
+              {cropMode && imageSrc ? (
+                <>
+                  <img
+                    src={imageSrc}
+                    alt="Crop preview"
+                    className="max-w-full max-h-full object-contain select-none"
+                    draggable={false}
+                  />
+                  {/* SVG overlay for corner handles */}
+                  <svg
+                    aria-label="Document edge correction overlay"
+                    role="img"
+                    className="absolute inset-0 w-full h-full cursor-crosshair"
+                    onPointerMove={handleOverlayPointerMove}
+                    onPointerUp={handleOverlayPointerUp}
+                    onPointerLeave={handleOverlayPointerUp}
+                  >
+                    {displayCorners.length === 4 && (
+                      <>
+                        <polygon
+                          points={polygonPoints}
+                          fill="rgba(37, 99, 235, 0.12)"
+                          stroke="#2563eb"
+                          strokeWidth="2"
+                          strokeDasharray="6 3"
+                          className="animate-pulse"
+                        />
+                        {displayCorners.map((c, idx) => (
+                          <g key={CORNER_LABELS[idx]}>
+                            <circle
+                              cx={c[0]}
+                              cy={c[1]}
+                              r={14}
+                              fill="transparent"
+                              className="cursor-grab"
+                              onPointerDown={(e) => {
+                                e.currentTarget.setPointerCapture(e.pointerId);
+                                setDraggingIdx(idx);
+                              }}
+                            />
+                            <circle
+                              cx={c[0]}
+                              cy={c[1]}
+                              r={7}
+                              fill="#2563eb"
+                              stroke="white"
+                              strokeWidth="2"
+                              className="cursor-grab pointer-events-none"
+                            />
+                          </g>
+                        ))}
+                      </>
+                    )}
+                  </svg>
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={applyCrop}
+                      className="flex items-center gap-1 bg-blue-600 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+                      data-ocid="scanner.crop_apply.button"
+                    >
+                      <Check size={11} />
+                      Apply Crop
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCropMode(false)}
+                      className="flex items-center gap-1 bg-black/50 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg hover:bg-black/70 transition-colors"
+                      data-ocid="scanner.crop_skip.button"
+                    >
+                      <SkipForward size={11} />
+                      Skip
+                    </button>
+                  </div>
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-blue-600/90 text-white text-xs px-2 py-0.5 rounded-full whitespace-nowrap">
+                    Drag corners to adjust
+                  </div>
+                </>
+              ) : previewUrl ? (
                 <img
-                  src={imageSrc}
-                  alt="Crop preview"
-                  className="max-w-full max-h-full object-contain select-none"
-                  draggable={false}
+                  src={previewUrl}
+                  alt="Preview"
+                  className="max-w-full max-h-full object-contain"
                 />
-                {/* SVG overlay for corner handles */}
-                <svg
-                  aria-label="Document edge correction overlay"
-                  role="img"
-                  className="absolute inset-0 w-full h-full cursor-crosshair"
-                  onPointerMove={handleOverlayPointerMove}
-                  onPointerUp={handleOverlayPointerUp}
-                  onPointerLeave={handleOverlayPointerUp}
-                >
-                  {displayCorners.length === 4 && (
-                    <>
-                      <polygon
-                        points={polygonPoints}
-                        fill="rgba(37, 99, 235, 0.12)"
-                        stroke="#2563eb"
-                        strokeWidth="2"
-                        strokeDasharray="6 3"
-                        className="animate-pulse"
-                      />
-                      {displayCorners.map((c, idx) => (
-                        <g key={CORNER_LABELS[idx]}>
-                          <circle
-                            cx={c[0]}
-                            cy={c[1]}
-                            r={14}
-                            fill="transparent"
-                            className="cursor-grab"
-                            onPointerDown={(e) => {
-                              e.currentTarget.setPointerCapture(e.pointerId);
-                              setDraggingIdx(idx);
-                            }}
-                          />
-                          <circle
-                            cx={c[0]}
-                            cy={c[1]}
-                            r={7}
-                            fill="#2563eb"
-                            stroke="white"
-                            strokeWidth="2"
-                            className="cursor-grab pointer-events-none"
-                          />
-                        </g>
-                      ))}
-                    </>
-                  )}
-                </svg>
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={applyCrop}
-                    className="flex items-center gap-1 bg-blue-600 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
-                    data-ocid="scanner.crop_apply.button"
-                  >
-                    <Check size={11} />
-                    Apply Crop
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCropMode(false)}
-                    className="flex items-center gap-1 bg-black/50 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg hover:bg-black/70 transition-colors"
-                    data-ocid="scanner.crop_skip.button"
-                  >
-                    <SkipForward size={11} />
-                    Skip
-                  </button>
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                  <ImageIcon size={32} className="opacity-30" />
+                  <span className="text-xs">No image loaded</span>
                 </div>
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-blue-600/90 text-white text-xs px-2 py-0.5 rounded-full whitespace-nowrap">
-                  Drag corners to adjust
-                </div>
-              </>
-            ) : previewUrl ? (
+              )}
+            </div>
+
+            {/* Hidden img for processing */}
+            {imageSrc && !cropMode && (
               <img
-                src={previewUrl}
-                alt="Preview"
-                className="max-w-full max-h-full object-contain"
+                ref={imgRef}
+                src={imageSrc}
+                alt="source"
+                className="hidden"
+                onLoad={regeneratePreview}
               />
-            ) : (
-              <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                <ImageIcon size={32} className="opacity-30" />
-                <span className="text-xs">No image loaded</span>
-              </div>
+            )}
+            {/* Img used in crop mode */}
+            {imageSrc && cropMode && (
+              <img
+                ref={imgRef}
+                src={imageSrc}
+                alt="source"
+                className="hidden"
+                onLoad={handleImageLoaded}
+              />
+            )}
+            {/* Detection trigger on first load */}
+            {imageSrc && !cropMode && corners.length === 0 && (
+              <img
+                src={imageSrc}
+                alt="detect"
+                className="hidden"
+                onLoad={(e) => {
+                  const el = e.currentTarget as HTMLImageElement;
+                  if (el.naturalWidth > 0) {
+                    const detected = detectDocumentCorners(el);
+                    setCorners(detected);
+                    setCropMode(true);
+                  }
+                }}
+              />
             )}
           </div>
 
-          {/* Hidden img for processing */}
-          {imageSrc && !cropMode && (
-            <img
-              ref={imgRef}
-              src={imageSrc}
-              alt="source"
+          {/* Camera + Upload */}
+          <div className="px-4 pb-3 grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-xs"
+              onClick={() => setCameraOpen(true)}
+              data-ocid="scanner.camera_view.button"
+            >
+              <Camera size={13} className="mr-1.5" />
+              Camera View
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-xs"
+              onClick={handleUploadClick}
+              data-ocid="scanner.upload_button"
+            >
+              <Upload size={13} className="mr-1.5" />
+              Upload Image
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
               className="hidden"
-              onLoad={regeneratePreview}
-            />
-          )}
-          {/* Img used in crop mode */}
-          {imageSrc && cropMode && (
-            <img
-              ref={imgRef}
-              src={imageSrc}
-              alt="source"
-              className="hidden"
-              onLoad={handleImageLoaded}
-            />
-          )}
-          {/* Detection trigger on first load */}
-          {imageSrc && !cropMode && corners.length === 0 && (
-            <img
-              src={imageSrc}
-              alt="detect"
-              className="hidden"
-              onLoad={(e) => {
-                const el = e.currentTarget as HTMLImageElement;
-                if (el.naturalWidth > 0) {
-                  const detected = detectDocumentCorners(el);
-                  setCorners(detected);
-                  setCropMode(true);
-                }
-              }}
-            />
-          )}
-        </div>
-
-        {/* Camera + Upload */}
-        <div className="px-4 pb-3 grid grid-cols-2 gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="text-xs"
-            onClick={() => setCameraOpen(true)}
-            data-ocid="scanner.camera_view.button"
-          >
-            <Camera size={13} className="mr-1.5" />
-            Camera View
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="text-xs"
-            onClick={handleUploadClick}
-            data-ocid="scanner.upload_button"
-          >
-            <Upload size={13} className="mr-1.5" />
-            Upload Image
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleFileInputChange}
-            data-ocid="scanner.file.input"
-          />
-        </div>
-
-        {/* Rotation */}
-        <div className="px-4 pb-3 flex items-center gap-2">
-          <span className="text-xs text-muted-foreground flex-1">Rotation</span>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-7 w-7 p-0"
-            onClick={rotateLeft}
-            data-ocid="scanner.rotate_left.button"
-          >
-            <RotateCcw size={13} />
-          </Button>
-          <span className="text-xs text-muted-foreground w-8 text-center">
-            {rotation}°
-          </span>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-7 w-7 p-0"
-            onClick={rotateRight}
-            data-ocid="scanner.rotate_right.button"
-          >
-            <RotateCw size={13} />
-          </Button>
-        </div>
-
-        {/* Filter segmented control */}
-        <div className="px-4 pb-3">
-          <p className="text-xs text-muted-foreground mb-2">Filter</p>
-          <div className="grid grid-cols-5 gap-1 bg-muted rounded-lg p-1">
-            {FILTERS.map((f) => (
-              <button
-                type="button"
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                data-ocid={`scanner.filter_${f.id}.toggle`}
-                className={cn(
-                  "py-1.5 rounded-md text-xs font-medium transition-all flex flex-col items-center gap-0.5",
-                  filter === f.id
-                    ? "bg-card text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <span className={cn("w-3 h-3 rounded-full", f.dot)} />
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Document settings */}
-        <div className="px-4 pb-3 space-y-3">
-          <div>
-            <Label className="text-xs text-muted-foreground mb-1.5 block">
-              Document Name
-            </Label>
-            <Input
-              value={docName}
-              onChange={(e) => setDocName(e.target.value)}
-              className="h-8 text-sm"
-              data-ocid="scanner.name.input"
+              onChange={handleFileInputChange}
+              data-ocid="scanner.file.input"
             />
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1.5 block">
-                Format
-              </Label>
-              <Select
-                value={format}
-                onValueChange={(v) => setFormat(v as FormatType)}
-              >
-                <SelectTrigger
-                  className="h-8 text-xs"
-                  data-ocid="scanner.format.select"
+
+          {/* Rotation */}
+          <div className="px-4 pb-3 flex items-center gap-2">
+            <span className="text-xs text-muted-foreground flex-1">
+              Rotation
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={rotateLeft}
+              data-ocid="scanner.rotate_left.button"
+            >
+              <RotateCcw size={13} />
+            </Button>
+            <span className="text-xs text-muted-foreground w-8 text-center">
+              {rotation}°
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={rotateRight}
+              data-ocid="scanner.rotate_right.button"
+            >
+              <RotateCw size={13} />
+            </Button>
+          </div>
+
+          {/* Filter segmented control */}
+          <div className="px-4 pb-3">
+            <p className="text-xs text-muted-foreground mb-2">Filter</p>
+            <div className="grid grid-cols-5 gap-1 bg-muted rounded-lg p-1">
+              {FILTERS.map((f) => (
+                <button
+                  type="button"
+                  key={f.id}
+                  onClick={() => setFilter(f.id)}
+                  data-ocid={`scanner.filter_${f.id}.toggle`}
+                  className={cn(
+                    "py-1.5 rounded-md text-xs font-medium transition-all flex flex-col items-center gap-0.5",
+                    filter === f.id
+                      ? "bg-card text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
                 >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PDF">PDF</SelectItem>
-                  <SelectItem value="PNG">PNG</SelectItem>
-                  <SelectItem value="JPEG">JPEG</SelectItem>
-                </SelectContent>
-              </Select>
+                  <span className={cn("w-3 h-3 rounded-full", f.dot)} />
+                  {f.label}
+                </button>
+              ))}
             </div>
+          </div>
+
+          {/* Document settings */}
+          <div className="px-4 pb-3 space-y-3">
             <div>
               <Label className="text-xs text-muted-foreground mb-1.5 block">
-                Quality
+                Document Name
               </Label>
-              <Select
-                value={quality}
-                onValueChange={(v) => setQuality(v as QualityType)}
-              >
-                <SelectTrigger
-                  className="h-8 text-xs"
-                  data-ocid="scanner.quality.select"
+              <Input
+                value={docName}
+                onChange={(e) => setDocName(e.target.value)}
+                className="h-8 text-sm"
+                data-ocid="scanner.name.input"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">
+                  Format
+                </Label>
+                <Select
+                  value={format}
+                  onValueChange={(v) => setFormat(v as FormatType)}
                 >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="High">High</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="Low">Low</SelectItem>
-                </SelectContent>
-              </Select>
+                  <SelectTrigger
+                    className="h-8 text-xs"
+                    data-ocid="scanner.format.select"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PDF">PDF</SelectItem>
+                    <SelectItem value="PNG">PNG</SelectItem>
+                    <SelectItem value="JPEG">JPEG</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">
+                  Quality
+                </Label>
+                <Select
+                  value={quality}
+                  onValueChange={(v) => setQuality(v as QualityType)}
+                >
+                  <SelectTrigger
+                    className="h-8 text-xs"
+                    data-ocid="scanner.quality.select"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="High">High</SelectItem>
+                    <SelectItem value="Medium">Medium</SelectItem>
+                    <SelectItem value="Low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Export CTA */}
-      <div className="p-4 border-t border-border">
-        <Button
-          type="button"
-          onClick={handleExport}
-          disabled={isExporting || !imageSrc}
-          className="w-full font-semibold"
-          style={{ backgroundColor: "#1E88E5", color: "white" }}
-          data-ocid="scanner.export.primary_button"
-        >
-          {isExporting ? (
-            <span className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Exporting...
-            </span>
-          ) : (
-            <span className="flex items-center gap-2">
-              <FileDown size={15} />
-              Export as PDF
-            </span>
-          )}
-        </Button>
-      </div>
+        {/* Export CTA */}
+        <div className="p-4 border-t border-border">
+          <Button
+            type="button"
+            onClick={handleExport}
+            disabled={isExporting || !imageSrc}
+            className="w-full font-semibold"
+            style={{ backgroundColor: "#1E88E5", color: "white" }}
+            data-ocid="scanner.export.primary_button"
+          >
+            {isExporting ? (
+              <span className="flex items-center gap-2">
+                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Exporting...
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <FileDown size={15} />
+                Export as PDF
+              </span>
+            )}
+          </Button>
+        </div>
 
-      <CameraModal
-        open={cameraOpen}
-        onClose={() => setCameraOpen(false)}
-        onCapture={handleCameraCapture}
-      />
-    </aside>
+        <CameraModal
+          open={cameraOpen}
+          onClose={() => setCameraOpen(false)}
+          onCapture={handleCameraCapture}
+        />
+      </aside>
+    </>
   );
 }

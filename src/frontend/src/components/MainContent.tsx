@@ -31,6 +31,7 @@ import {
   HelpCircle,
   Info,
   LogIn,
+  Menu,
   MessageCircle,
   ScanLine,
   Search,
@@ -61,6 +62,7 @@ interface MainContentProps {
   onExportPDF: () => void;
   onOpenChatbot: () => void;
   onOpenPDFTools: () => void;
+  onMenuClick?: () => void;
 }
 
 const FOLDERS = [
@@ -122,6 +124,7 @@ export function MainContent({
   onExportPDF,
   onOpenChatbot,
   onOpenPDFTools,
+  onMenuClick,
 }: MainContentProps) {
   const [search, setSearch] = useState("");
   const [autoEnhance, setAutoEnhance] = useState(false);
@@ -214,8 +217,18 @@ export function MainContent({
   const folderDocs = selectedFolder === "All Documents" ? filtered : [];
 
   const Header = (
-    <header className="flex items-center justify-between px-8 py-4 bg-card border-b border-border sticky top-0 z-10">
-      <div className="relative">
+    <header className="flex items-center gap-2 px-4 md:px-8 py-3 md:py-4 bg-card border-b border-border sticky top-0 z-10">
+      {/* Hamburger — mobile only */}
+      <button
+        type="button"
+        onClick={onMenuClick}
+        className="md:hidden p-2 rounded-lg hover:bg-muted transition-colors flex-shrink-0"
+        data-ocid="main.menu.button"
+        aria-label="Open menu"
+      >
+        <Menu size={20} className="text-muted-foreground" />
+      </button>
+      <div className="relative flex-1 md:flex-none">
         <Search
           size={15}
           className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
@@ -224,7 +237,7 @@ export function MainContent({
           placeholder="Search documents..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-9 h-9 w-64 text-sm bg-background"
+          className="pl-9 h-9 w-full md:w-64 text-sm bg-background"
           data-ocid="main.search_input"
         />
       </div>
@@ -353,18 +366,9 @@ export function MainContent({
   );
 
   const Footer = (
-    <footer className="px-8 py-4 border-t border-border text-center">
+    <footer className="px-4 md:px-8 py-4 border-t border-border text-center mb-16 md:mb-0">
       <p className="text-xs text-muted-foreground">
-        © {new Date().getFullYear()}. Built with{" "}
-        <span className="text-red-400">♥</span> using{" "}
-        <a
-          href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:text-primary transition-colors"
-        >
-          caffeine.ai
-        </a>
+        © {new Date().getFullYear()}. Built by vaibhav ramasane
       </p>
     </footer>
   );
@@ -373,14 +377,14 @@ export function MainContent({
     switch (activeNav) {
       case "dashboard":
         return (
-          <div className="flex-1 p-8">
+          <div className="flex-1 p-4 md:p-8">
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="mb-7"
+              className="mb-6 md:mb-7"
             >
-              <h1 className="text-3xl font-bold text-foreground">
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                 Welcome back!
               </h1>
               <p className="text-muted-foreground mt-1 text-sm">
@@ -389,7 +393,7 @@ export function MainContent({
             </motion.div>
 
             {/* Quick actions — 3 cols first row, 2 cols second row centered */}
-            <div className="grid grid-cols-3 gap-4 mb-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-2">
               {QUICK_ACTIONS.slice(0, 3).map((action, i) => (
                 <motion.div
                   key={action.step}
@@ -417,7 +421,7 @@ export function MainContent({
                 </motion.div>
               ))}
             </div>
-            <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 md:mb-8">
               {QUICK_ACTIONS.slice(3).map((action, i) => (
                 <motion.div
                   key={action.step}
@@ -468,7 +472,7 @@ export function MainContent({
               </div>
             ) : (
               <motion.div
-                className="grid grid-cols-3 gap-4"
+                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.15, duration: 0.3 }}
@@ -489,14 +493,16 @@ export function MainContent({
 
       case "scans":
         return (
-          <div className="flex-1 p-8">
+          <div className="flex-1 p-4 md:p-8">
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="mb-7"
+              className="mb-6 md:mb-7"
             >
-              <h1 className="text-3xl font-bold text-foreground">My Scans</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+                My Scans
+              </h1>
               <p className="text-muted-foreground mt-1 text-sm">
                 {documents.length} document{documents.length !== 1 ? "s" : ""}{" "}
                 in your library.
@@ -524,7 +530,7 @@ export function MainContent({
               </div>
             ) : (
               <motion.div
-                className="grid grid-cols-3 gap-4"
+                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.1, duration: 0.3 }}
@@ -545,14 +551,14 @@ export function MainContent({
 
       case "shared":
         return (
-          <div className="flex-1 p-8">
+          <div className="flex-1 p-4 md:p-8">
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="mb-7"
+              className="mb-6 md:mb-7"
             >
-              <h1 className="text-3xl font-bold text-foreground">
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                 Shared Documents
               </h1>
               <p className="text-muted-foreground mt-1 text-sm">
@@ -583,20 +589,22 @@ export function MainContent({
 
       case "folders":
         return (
-          <div className="flex-1 p-8">
+          <div className="flex-1 p-4 md:p-8">
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="mb-7"
+              className="mb-6 md:mb-7"
             >
-              <h1 className="text-3xl font-bold text-foreground">Folders</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+                Folders
+              </h1>
               <p className="text-muted-foreground mt-1 text-sm">
                 Organise your documents into folders.
               </p>
             </motion.div>
             <div
-              className="grid grid-cols-4 gap-4 mb-8"
+              className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8"
               data-ocid="folders.list"
             >
               {FOLDERS.map((folder, i) => (
@@ -650,7 +658,7 @@ export function MainContent({
               </div>
             ) : (
               <div
-                className="grid grid-cols-3 gap-4"
+                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4"
                 data-ocid="folders.documents.list"
               >
                 {folderDocs.map((doc, i) => (
@@ -668,14 +676,16 @@ export function MainContent({
 
       case "settings":
         return (
-          <div className="flex-1 p-8 max-w-2xl">
+          <div className="flex-1 p-4 md:p-8 max-w-2xl">
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="mb-7"
+              className="mb-6 md:mb-7"
             >
-              <h1 className="text-3xl font-bold text-foreground">Settings</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+                Settings
+              </h1>
               <p className="text-muted-foreground mt-1 text-sm">
                 Manage your app preferences.
               </p>
@@ -780,14 +790,14 @@ export function MainContent({
 
       case "help":
         return (
-          <div className="flex-1 p-8 max-w-2xl">
+          <div className="flex-1 p-4 md:p-8 max-w-2xl">
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="mb-7"
+              className="mb-6 md:mb-7"
             >
-              <h1 className="text-3xl font-bold text-foreground">
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                 Help & Support
               </h1>
               <p className="text-muted-foreground mt-1 text-sm">
@@ -833,7 +843,10 @@ export function MainContent({
   }
 
   return (
-    <main className="flex-1 flex flex-col min-h-screen" data-ocid="main.page">
+    <main
+      className="flex-1 flex flex-col min-h-screen pb-16 md:pb-0"
+      data-ocid="main.page"
+    >
       {Header}
       {renderBody()}
       {Footer}
