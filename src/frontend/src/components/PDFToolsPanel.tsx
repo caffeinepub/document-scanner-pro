@@ -908,6 +908,27 @@ function ToolModalBody({
             {tool.label} completed successfully.
           </p>
         </div>
+        {tool.id === "protect" && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3">
+            <p className="text-xs text-amber-400 font-medium">
+              ⚠ Browser Limitation
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Browser-based PDF encryption is not supported by pdf-lib. Your
+              document has been stamped with a PROTECTED watermark. For real
+              password protection, use Adobe Acrobat or{" "}
+              <a
+                href="https://ilovepdf.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline text-amber-400"
+              >
+                ilovepdf.com
+              </a>
+              .
+            </p>
+          </div>
+        )}
         {result.summary && (
           <div className="bg-muted/40 rounded-xl p-3 space-y-1">
             <p className="text-xs font-semibold text-muted-foreground mb-2">

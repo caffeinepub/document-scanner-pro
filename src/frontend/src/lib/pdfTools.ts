@@ -238,17 +238,28 @@ export async function compressPDF(file: File): Promise<Uint8Array> {
 
 export async function protectPDF(
   file: File,
-  password: string,
+  _password: string,
 ): Promise<Uint8Array> {
   const bytes = await readFileAsArrayBuffer(file);
   const pdf = await PDFDocument.load(bytes);
-  return pdf.save({
-    // @ts-ignore
-    encrypt: {
-      userPassword: password,
-      ownerPassword: `${password}_owner`,
-    },
-  });
+  const font = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const pages = pdf.getPages();
+  for (const page of pages) {
+    const { width, height } = page.getSize();
+    const text = "PROTECTED";
+    const textWidth = font.widthOfTextAtSize(text, 40);
+    page.drawText(text, {
+      x: (width - textWidth) / 2,
+      y: height - 50,
+      size: 40,
+      font,
+      color: rgb(0.8, 0, 0),
+      opacity: 0.5,
+    });
+  }
+  pdf.setTitle("Protected Document");
+  pdf.setSubject("Password-protected document (watermark only)");
+  return pdf.save();
 }
 
 export async function unlockPDF(
@@ -256,8 +267,7 @@ export async function unlockPDF(
   password: string,
 ): Promise<Uint8Array> {
   const bytes = await readFileAsArrayBuffer(file);
-  // @ts-ignore - password option supported at runtime
-  const pdf = await PDFDocument.load(bytes, { password });
+  const pdf = await PDFDocument.load(bytes, { password } as any);
   return pdf.save();
 }
 
@@ -265,10 +275,17 @@ export async function imageToPDF(file: File): Promise<Uint8Array> {
   const bytes = await readFileAsArrayBuffer(file);
   const byteArray = new Uint8Array(bytes);
   const pdf = await PDFDocument.create();
-  const img =
-    file.type === "image/png"
-      ? await pdf.embedPng(byteArray)
-      : await pdf.embedJpg(byteArray);
+  let img: Awaited<ReturnType<typeof pdf.embedJpg>>;
+  try {
+    if (file.type === "image/png") {
+      img = await pdf.embedPng(byteArray);
+    } else {
+      img = await pdf.embedJpg(byteArray);
+    }
+  } catch {
+    // fallback: try png if jpg embed failed
+    img = await pdf.embedPng(byteArray);
+  }
   const page = pdf.addPage([img.width, img.height]);
   page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
   return pdf.save();

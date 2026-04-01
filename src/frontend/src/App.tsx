@@ -1,14 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
-import {
-  Camera,
-  FileCog,
-  LayoutDashboard,
-  MessageCircle,
-  ScanLine,
-} from "lucide-react";
+import { Camera, FileCog, LayoutDashboard, ScanLine } from "lucide-react";
 import { useState } from "react";
-import ChatbotPanel from "./components/ChatbotPanel";
 import { MainContent } from "./components/MainContent";
 import { PDFToolsPanel } from "./components/PDFToolsPanel";
 import { ScannerPanel } from "./components/ScannerPanel";
@@ -22,7 +15,7 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [mobileScannerOpen, setMobileScannerOpen] = useState(false);
-  const [currentImageSrc, setCurrentImageSrc] = useState<string | null>(null);
+  const [_currentImageSrc, setCurrentImageSrc] = useState<string | null>(null);
   const { documents, addDocument, deleteDocument } = useDocuments();
   const isMobile = useIsMobile();
 
@@ -62,14 +55,12 @@ export default function App() {
     addDocument(doc);
   }
 
-  const isChatbot = activeNav === "chatbot";
   const isPDFTools = activeNav === "pdftools";
-  const hideRightPanel = isChatbot || isPDFTools;
+  const hideRightPanel = isPDFTools;
 
   const BOTTOM_NAV = [
     { id: "dashboard", icon: <LayoutDashboard size={20} />, label: "Home" },
     { id: "scans", icon: <ScanLine size={20} />, label: "Scans" },
-    { id: "chatbot", icon: <MessageCircle size={20} />, label: "Chat" },
     { id: "pdftools", icon: <FileCog size={20} />, label: "PDF" },
   ];
 
@@ -105,12 +96,7 @@ export default function App() {
       >
         {/* Add bottom padding on mobile to account for bottom nav */}
         <div className="flex-1 flex flex-col pb-0 md:pb-0">
-          {isChatbot ? (
-            <ChatbotPanel
-              currentImage={currentImageSrc}
-              documents={documents}
-            />
-          ) : isPDFTools ? (
+          {isPDFTools ? (
             <PDFToolsPanel />
           ) : (
             <MainContent
@@ -120,7 +106,6 @@ export default function App() {
               onScanDocument={handleNewScan}
               onImportEdit={handleImport}
               onExportPDF={handleExportPDF}
-              onOpenChatbot={() => setActiveNav("chatbot")}
               onOpenPDFTools={() => setActiveNav("pdftools")}
               onMenuClick={() => setMobileSidebarOpen(true)}
             />

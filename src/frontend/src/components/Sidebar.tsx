@@ -9,7 +9,6 @@ import {
   Folder,
   HelpCircle,
   LayoutDashboard,
-  MessageCircle,
   ScanLine,
   Settings,
   Share2,
@@ -56,7 +55,6 @@ export function Sidebar({
     { icon: <FileCog size={18} />, label: "PDF Tools", id: "pdftools" },
     { icon: <Settings size={18} />, label: "Settings", id: "settings" },
     { icon: <HelpCircle size={18} />, label: "Help", id: "help" },
-    { icon: <MessageCircle size={18} />, label: "Chatbot", id: "chatbot" },
   ];
 
   return (

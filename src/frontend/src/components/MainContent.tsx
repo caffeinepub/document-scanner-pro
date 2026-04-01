@@ -32,7 +32,6 @@ import {
   Info,
   LogIn,
   Menu,
-  MessageCircle,
   ScanLine,
   Search,
   Share2,
@@ -60,7 +59,6 @@ interface MainContentProps {
   onScanDocument: () => void;
   onImportEdit: () => void;
   onExportPDF: () => void;
-  onOpenChatbot: () => void;
   onOpenPDFTools: () => void;
   onMenuClick?: () => void;
 }
@@ -122,7 +120,6 @@ export function MainContent({
   onScanDocument,
   onImportEdit,
   onExportPDF,
-  onOpenChatbot,
   onOpenPDFTools,
   onMenuClick,
 }: MainContentProps) {
@@ -196,17 +193,10 @@ export function MainContent({
       onClick: onExportPDF,
     },
     {
-      icon: <MessageCircle size={20} className="text-fuchsia-500" />,
-      title: "Chatbot",
-      desc: "Ask about your documents",
-      step: "04",
-      onClick: onOpenChatbot,
-    },
-    {
       icon: <FileCog size={20} className="text-orange-500" />,
       title: "PDF Tools",
       desc: "Merge, convert, secure",
-      step: "05",
+      step: "04",
       onClick: onOpenPDFTools,
     },
   ];
